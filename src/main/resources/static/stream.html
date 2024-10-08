@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Chatbot</title>
+    <script src="https://unpkg.com/htmx.org@1.9.6"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .message-content {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .message-content code {
+            background-color: #f0f0f0;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen flex flex-col">
+<div class="container mx-auto p-4 flex-1 flex flex-col">
+    <h1 class="text-2xl font-bold mb-4 text-center text-gray-800">Dan's Chatbot</h1>
+
+    <div class="flex-1 overflow-y-auto mb-4 p-4 bg-white rounded-lg shadow">
+        <div id="chat-messages" class="space-y-4"></div>
+    </div>
+
+    <form id="chat-form" class="flex items-center">
+        <input
+                type="text"
+                id="message-input"
+                name="message"
+                placeholder="Type your message..."
+                class="flex-1 p-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+        >
+        <button
+                type="submit"
+                class="bg-blue-500 text-white px-4 py-2 rounded-r-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+            Send
+        </button>
+    </form>
+    <div id="spinner" class="htmx-indicator">
+        <div class="spinner"></div>
+    </div>
+</div>
+
+<script>
+    const chatForm = document.getElementById('chat-form');
+    const messageInput = document.getElementById('message-input');
+    const chatMessages = document.getElementById('chat-messages');
+
+    chatForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const message = messageInput.value;
+        if (!message) return;
+
+        // Add user message to chat
+        addMessageToChat('User', message);
+
+        // Clear input
+        messageInput.value = '';
+
+        // Start SSE connection
+        const eventSource = new EventSource(`/stream?message=${encodeURIComponent(message)}`);
+
+        let botMessageElement = null;
+
+        eventSource.onmessage = function(event) {
+            const chunk = event.data;
+
+            if (!botMessageElement) {
+                botMessageElement = addMessageToChat('Bot', '');
+            }
+
+            const contentElement = botMessageElement.querySelector('.message-content');
+            contentElement.innerHTML += chunk;
+
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        };
+
+        eventSource.onerror = function() {
+            eventSource.close();
+        };
+    });
+
+    function addMessageToChat(sender, content) {
+        const messageElement = document.createElement('div');
+        messageElement.className = `${sender.toLowerCase()}-message ${sender === 'User' ? 'bg-blue-100' : 'bg-gray-100'} p-3 rounded-lg`;
+        messageElement.innerHTML = `
+            <div class="font-bold ${sender === 'User' ? 'text-blue-600' : 'text-green-600'}">${sender}:</div>
+            <div class="message-content">${content}</div>
+        `;
+        chatMessages.appendChild(messageElement);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        return messageElement;
+    }
+</script>
+</body>
+</html>
