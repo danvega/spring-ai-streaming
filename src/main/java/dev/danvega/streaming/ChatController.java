@@ -1,7 +1,6 @@
 package dev.danvega.streaming;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 
