@@ -23,25 +23,12 @@ public class ChatController {
                 .content();
     }
 
-    @PostMapping("/chat-with-stream")
+    @GetMapping("/stream")
     public Flux<String> chatWithStream(@RequestParam String message) {
         return chatClient.prompt()
                 .user(message)
                 .stream()
                 .content();
     }
-
-    @GetMapping(value = "/stream", produces = "text/event-stream")
-    public Flux<ServerSentEvent<String>> stream(@RequestParam String message) {
-        return chatClient.prompt()
-                .user(message)
-                .stream()
-                .content()
-                .map(chunk -> ServerSentEvent.<String>builder()
-                        .data(chunk)
-                        .build());
-    }
-
-
 
 }
